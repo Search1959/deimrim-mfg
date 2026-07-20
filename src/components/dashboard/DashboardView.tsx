@@ -1,5 +1,4 @@
-import React from "react";
-import { Package, Factory, ShieldCheck, Warehouse, ShoppingCart, TrendingUp, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { Package, Factory, ShieldCheck, Warehouse, ShoppingCart, TrendingUp, AlertTriangle } from "lucide-react";
 import type { RawMaterial, BOMItem, ProductionOrder, QCRecord, FinishedGood, SalesOrder, Invoice } from "../../types";
 import { formatINR } from "../../types";
 

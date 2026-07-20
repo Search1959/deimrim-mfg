@@ -24,7 +24,7 @@ const PO_STATUS_BADGE: Record<string, string> = {
   received:"bg-emerald-500/20 text-emerald-400 border-emerald-500/30", closed:"bg-slate-700/50 text-slate-500 border-slate-600/30",
 };
 
-export default function FinanceView({ invoices, setInvoices, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, customers, currentUser }: Props) {
+export default function FinanceView({ invoices, setInvoices, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, customers: _customers, currentUser }: Props) {
   const [tab, setTab] = useState<Tab>("invoices");
   const [showSupModal, setShowSupModal] = useState(false);
   const canWrite = ["superadmin","manager"].includes(currentUser.role);

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Settings, Plus, X, Edit, Trash2, UserCheck } from "lucide-react";
+import { Settings, Plus, X, Edit, Trash2 } from "lucide-react";
 import type { User, UserRole } from "../../types";
 import { toast } from "../../utils/toast";
 

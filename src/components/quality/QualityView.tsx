@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ShieldCheck, Plus, X, Download, CheckCircle, XCircle } from "lucide-react";
+import { ShieldCheck, Plus, X, Download } from "lucide-react";
 import type { QCRecord, QCResult, ProductionOrder, BOMItem, FinishedGood, User } from "../../types";
 import { toast } from "../../utils/toast";
 

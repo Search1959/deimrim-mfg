@@ -24,7 +24,7 @@ const STATUS_BADGE: Record<OrderStatus, string> = {
 
 const CUST_TYPES: CustomerType[] = ["Railway","Local","Automotive","Industrial"];
 
-export default function SalesView({ salesOrders, setSalesOrders, dispatches, setDispatches, customers, setCustomers, boms, finishedGoods, currentUser }: Props) {
+export default function SalesView({ salesOrders, setSalesOrders, dispatches, setDispatches: _setDispatches, customers, setCustomers, boms, finishedGoods: _finishedGoods, currentUser }: Props) {
   const [tab, setTab] = useState<Tab>("orders");
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showCustModal, setShowCustModal] = useState(false);

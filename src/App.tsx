@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   LayoutDashboard, Package, BookOpen, Factory, ShieldCheck,
   Warehouse, ShoppingCart, Banknote, Settings, LogOut, Menu, X, ChevronRight
@@ -58,8 +58,8 @@ export default function App() {
 
   if (!currentUser) return <LoginPage users={users} onLogin={setCurrentUser} />;
 
-  const canAccess = (id: string) => NAV.find(n => n.id === id)?.roles.includes(currentUser.role) ?? false;
-  const visibleNav = NAV.filter(n => n.roles.includes(currentUser.role));
+  const canAccess = (id: string) => (NAV.find(n => n.id === id)?.roles as string[] | undefined)?.includes(currentUser.role) ?? false;
+  const visibleNav = NAV.filter(n => (n.roles as readonly string[]).includes(currentUser.role));
 
   return (
     <div className="flex h-screen bg-[#020617] overflow-hidden">
