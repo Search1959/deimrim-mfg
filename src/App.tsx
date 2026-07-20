@@ -1,7 +1,8 @@
 import { useState } from "react";
 import {
   LayoutDashboard, Package, BookOpen, Factory, ShieldCheck,
-  Warehouse, ShoppingCart, Banknote, Settings, LogOut, Menu, X, ChevronRight
+  Warehouse, ShoppingCart, Banknote, Settings, LogOut, Menu, X, ChevronRight,
+  GitBranch, Wrench, FileSpreadsheet
 } from "lucide-react";
 import type { User, RawMaterial, BOMItem, ProductionOrder, QCRecord, FinishedGood, Customer, SalesOrder, Dispatch, Supplier, PurchaseOrder, Invoice } from "./types";
 import { DEMO_USERS, MOCK_RAW_MATERIALS, MOCK_BOM, MOCK_PRODUCTION_ORDERS, MOCK_QC, MOCK_FINISHED_GOODS, MOCK_CUSTOMERS, MOCK_SALES_ORDERS, MOCK_DISPATCHES, MOCK_SUPPLIERS, MOCK_PO, MOCK_INVOICES } from "./mockData";
@@ -15,8 +16,11 @@ import FinishedGoodsView from "./components/finished/FinishedGoodsView";
 import SalesView from "./components/sales/SalesView";
 import FinanceView from "./components/finance/FinanceView";
 import SettingsView from "./components/settings/SettingsView";
+import MRPView from "./components/mrp/MRPView";
+import MaintenanceView from "./components/maintenance/MaintenanceView";
+import ReportsView from "./components/reports/ReportsView";
 
-type Module = "dashboard" | "rawmaterial" | "bom" | "production" | "quality" | "finished" | "sales" | "finance" | "settings";
+type Module = "dashboard" | "rawmaterial" | "bom" | "production" | "quality" | "finished" | "sales" | "finance" | "mrp" | "maintenance" | "reports" | "settings";
 
 const NAV = [
   { id: "dashboard",   label: "Dashboard",       icon: LayoutDashboard, roles: ["superadmin","manager","sales","operator","readonly"] },
@@ -26,8 +30,11 @@ const NAV = [
   { id: "quality",     label: "Quality Control",  icon: ShieldCheck,     roles: ["superadmin","manager","operator","readonly"] },
   { id: "finished",    label: "Finished Goods",   icon: Warehouse,       roles: ["superadmin","manager","sales","readonly"] },
   { id: "sales",       label: "Sales & Dispatch", icon: ShoppingCart,    roles: ["superadmin","manager","sales","readonly"] },
-  { id: "finance",     label: "Finance",          icon: Banknote,        roles: ["superadmin","manager","readonly"] },
-  { id: "settings",    label: "Settings",         icon: Settings,        roles: ["superadmin"] },
+  { id: "finance",      label: "Finance",          icon: Banknote,        roles: ["superadmin","manager","readonly"] },
+  { id: "mrp",         label: "MRP / Planning",   icon: GitBranch,       roles: ["superadmin","manager","readonly"] },
+  { id: "maintenance", label: "Maintenance",       icon: Wrench,          roles: ["superadmin","manager","operator","readonly"] },
+  { id: "reports",     label: "Reports",           icon: FileSpreadsheet, roles: ["superadmin","manager","readonly"] },
+  { id: "settings",    label: "Settings",          icon: Settings,        roles: ["superadmin"] },
 ] as const;
 
 const ROLE_BADGE: Record<string, string> = {
@@ -127,7 +134,10 @@ export default function App() {
           {activeModule === "quality"     && <QualityView qcRecords={qcRecords} setQcRecords={setQcRecords} productionOrders={productionOrders} setFinishedGoods={setFinishedGoods} boms={boms} currentUser={currentUser} />}
           {activeModule === "finished"    && <FinishedGoodsView finishedGoods={finishedGoods} setFinishedGoods={setFinishedGoods} boms={boms} currentUser={currentUser} />}
           {activeModule === "sales"       && <SalesView salesOrders={salesOrders} setSalesOrders={setSalesOrders} dispatches={dispatches} setDispatches={setDispatches} customers={customers} setCustomers={setCustomers} boms={boms} finishedGoods={finishedGoods} currentUser={currentUser} />}
-          {activeModule === "finance"     && <FinanceView invoices={invoices} setInvoices={setInvoices} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} customers={customers} salesOrders={salesOrders} currentUser={currentUser} />}
+          {activeModule === "finance"      && <FinanceView invoices={invoices} setInvoices={setInvoices} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} setSuppliers={setSuppliers} customers={customers} salesOrders={salesOrders} currentUser={currentUser} />}
+          {activeModule === "mrp"         && <MRPView salesOrders={salesOrders} boms={boms} rawMaterials={rawMaterials} purchaseOrders={purchaseOrders} setPurchaseOrders={setPurchaseOrders} suppliers={suppliers} currentUser={currentUser} />}
+          {activeModule === "maintenance" && <MaintenanceView currentUser={currentUser} />}
+          {activeModule === "reports"     && <ReportsView rawMaterials={rawMaterials} productionOrders={productionOrders} qcRecords={qcRecords} finishedGoods={finishedGoods} salesOrders={salesOrders} invoices={invoices} purchaseOrders={purchaseOrders} boms={boms} currentUser={currentUser} />}
           {activeModule === "settings"    && canAccess("settings") && <SettingsView users={users} setUsers={setUsers} currentUser={currentUser} />}
         </div>
       </main>
