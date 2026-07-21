@@ -12,51 +12,56 @@ export interface User {
 }
 
 // ── Raw Material ─────────────────────────────────────────────────────────────
-export type RMGrade = "EN45A" | "60Si2Mn" | "SUP9" | "Chrome Vanadium" | "65Si7" | "Other";
+export type RMCategory =
+  | "Alloy Steel" | "Mild Steel" | "Stainless Steel" | "Aluminium" | "Copper"
+  | "Plastic / Polymer" | "Rubber" | "Fabric / Textile" | "Chemical" | "Packaging" | "Other";
+
+export type RMUnit = "kg" | "ton" | "meter" | "litre" | "pcs" | "set" | "roll" | "sheet" | "box";
 export type RMStatus = "in_stock" | "low_stock" | "out_of_stock";
 
 export interface RawMaterial {
   id: string;
-  heatNo: string;          // Heat number from steel mill
-  grade: RMGrade;
-  wireDiaMm: number;       // Wire diameter in mm
-  coilWeightKg: number;    // Weight per coil
-  quantityCoils: number;
-  totalWeightKg: number;
+  code: string;           // e.g. RM-001
+  name: string;           // e.g. 60Si2Mn Wire Rod 36mm / Cotton Fabric 120gsm
+  category: RMCategory;
+  unit: RMUnit;
+  quantity: number;
+  unitCost: number;       // ₹ per unit
+  totalValue: number;     // quantity × unitCost
   supplier: string;
   receivedDate: string;
-  millTestCert: boolean;   // Mill test certificate received
-  remarks?: string;
+  batchNo?: string;
   status: RMStatus;
+  minStock: number;       // reorder point
+  location?: string;
+  remarks?: string;
 }
 
 // ── Bill of Materials ────────────────────────────────────────────────────────
-export type SpringType = "Compression" | "Extension" | "Torsion" | "Buffer" | "Draw Gear" | "Bogie" | "Volute";
-export type CustomerType = "Railway" | "Local" | "Automotive" | "Industrial";
+export type CustomerType = "Railway" | "Automotive" | "Industrial" | "Construction" | "Consumer" | "Export" | "Other";
+
+export interface BOMRawMaterial {
+  materialId: string;
+  materialName: string;
+  qtyPerUnit: number;
+  unit: string;
+}
 
 export interface BOMItem {
   id: string;
-  drawingNo: string;        // RDSO drawing number or internal
-  springName: string;
-  springType: SpringType;
+  productCode: string;      // e.g. RDSO/SK-73006 or SMC-001
+  productName: string;      // e.g. Bogie Outer Spring / T-Shirt Size M
+  category: string;         // Springs / Garments / Pipes / Castings
+  unit: string;             // pcs / kg / meter / set
   customerType: CustomerType;
-  rdsoSpec?: string;        // e.g. RDSO/2019/CG-05
-  wireDiaMm: number;
-  outerDiaMm: number;
-  freeHeightMm: number;
-  totalCoils: number;
-  activeCoils: number;
-  grade: RMGrade;
-  springRateNMm: number;   // N/mm
-  fittedLoadKg: number;
-  fittedHeightMm: number;
-  solidHeightMm: number;
-  endType: string;         // e.g. "Closed & Ground"
-  heatTreatment: string;   // e.g. "Q&T + Shot Peening"
-  weightKgEach: number;
-  rmConsumptionKg: number; // RM per spring
+  specifications: string;   // Free text — any factory fills what's relevant
+  rawMaterials: BOMRawMaterial[];
+  labourHrsPerUnit: number;
+  machineHrsPerUnit: number;
+  costPerUnit: number;
+  revision: string;         // Rev A, Rev 2, etc.
+  status: "active" | "draft" | "obsolete";
   remarks?: string;
-  active: boolean;
 }
 
 // ── Production Orders ────────────────────────────────────────────────────────
@@ -66,13 +71,11 @@ export interface ProductionOrder {
   id: string;
   orderNo: string;
   bomId: string;
-  drawingNo: string;
-  springName: string;
+  productCode: string;
+  productName: string;
   plannedQty: number;
   producedQty: number;
   rejectedQty: number;
-  rawMaterialId?: string;
-  heatNo?: string;
   batchNo: string;
   machine: string;
   operatorId: string;
@@ -87,32 +90,27 @@ export interface ProductionOrder {
 // ── Quality Control ──────────────────────────────────────────────────────────
 export type QCResult = "Pass" | "Fail" | "Conditional Pass";
 
+export interface QCCheckItem {
+  parameter: string;    // e.g. "Outer Diameter", "Tensile Strength", "Weight"
+  specification: string;// e.g. "212 ± 1 mm"
+  actual: string;       // e.g. "211.8 mm"
+  result: QCResult;
+}
+
 export interface QCRecord {
   id: string;
   productionOrderId: string;
   batchNo: string;
-  drawingNo: string;
-  springName: string;
+  productCode: string;
+  productName: string;
   inspectedQty: number;
   passedQty: number;
   rejectedQty: number;
-  // Dimensional checks
-  wireDiaActual: number;
-  outerDiaActual: number;
-  freeHeightActual: number;
-  totalCoilsActual: number;
-  // Load test
-  loadTestKg: number;
-  loadTestHeight: number;
-  loadResult: QCResult;
-  // Hardness
-  hardnessHRC?: number;
-  hardnessResult: QCResult;
-  // Overall
+  checks: QCCheckItem[];   // flexible parameter list — works for any product
   overallResult: QCResult;
   inspectionDate: string;
   inspectorName: string;
-  inspectionAgency?: string;   // RITES / RDSO / Internal
+  inspectionAgency?: string;
   certificateNo?: string;
   remarks?: string;
 }
@@ -121,13 +119,13 @@ export interface QCRecord {
 export interface FinishedGood {
   id: string;
   bomId: string;
-  drawingNo: string;
-  springName: string;
+  productCode: string;
+  productName: string;
   batchNo: string;
   qcRecordId: string;
   quantityNos: number;
-  weightKgTotal: number;
-  location: string;        // Rack / bin
+  unit: string;
+  location: string;
   receivedDate: string;
   remarks?: string;
 }
@@ -150,8 +148,8 @@ export type OrderStatus = "pending" | "confirmed" | "in_production" | "ready" | 
 
 export interface SalesOrderItem {
   bomId: string;
-  drawingNo: string;
-  springName: string;
+  productCode: string;
+  productName: string;
   qty: number;
   unitPrice: number;
   amount: number;
@@ -162,7 +160,7 @@ export interface SalesOrder {
   orderNo: string;
   customerId: string;
   customerName: string;
-  poNo: string;            // Customer PO number
+  poNo: string;
   poDate: string;
   items: SalesOrderItem[];
   totalAmount: number;
@@ -174,11 +172,11 @@ export interface SalesOrder {
 
 // ── Dispatch / Challan ───────────────────────────────────────────────────────
 export interface DispatchItem {
-  drawingNo: string;
-  springName: string;
+  productCode: string;
+  productName: string;
   batchNo: string;
   qty: number;
-  weightKg: number;
+  unit: string;
 }
 
 export interface Dispatch {
@@ -190,7 +188,6 @@ export interface Dispatch {
   dispatchDate: string;
   items: DispatchItem[];
   totalQty: number;
-  totalWeightKg: number;
   vehicleNo?: string;
   driverName?: string;
   eWayBillNo?: string;
@@ -214,7 +211,7 @@ export interface PurchaseOrder {
   poNo: string;
   supplierId: string;
   supplierName: string;
-  items: { description: string; grade: string; qty: number; unit: string; unitPrice: number; amount: number }[];
+  items: { description: string; qty: number; unit: string; unitPrice: number; amount: number }[];
   totalAmount: number;
   poDate: string;
   expectedDate: string;
@@ -230,7 +227,7 @@ export interface Invoice {
   gstin?: string;
   invoiceDate: string;
   dueDate: string;
-  items: { drawingNo: string; springName: string; qty: number; unitPrice: number; taxPct: number; amount: number }[];
+  items: { productCode: string; productName: string; qty: number; unit: string; unitPrice: number; taxPct: number; amount: number }[];
   subtotal: number;
   taxAmount: number;
   totalAmount: number;

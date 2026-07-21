@@ -49,9 +49,9 @@ export default function DashboardView({ rawMaterials, productionOrders, qcRecord
     { name: "QC Fail",     value: qcRecords.filter(q => q.overallResult === "Fail").length,        fill: "#ef4444" },
   ];
 
-  const rmByGrade: Record<string, number> = {};
-  rawMaterials.forEach(r => { rmByGrade[r.grade] = (rmByGrade[r.grade] || 0) + r.totalWeightKg; });
-  const rmChartData = Object.entries(rmByGrade).map(([grade, kg]) => ({ name: grade, kg }));
+  const rmByCategory: Record<string, number> = {};
+  rawMaterials.forEach(r => { rmByCategory[r.category] = (rmByCategory[r.category] || 0) + r.totalValue; });
+  const rmChartData = Object.entries(rmByCategory).map(([name, value]) => ({ name, kg: value }));
 
   const revenueData = [
     { month: "Feb", revenue: 285000, received: 210000 },
@@ -170,8 +170,8 @@ export default function DashboardView({ rawMaterials, productionOrders, qcRecord
             <div key={r.id} className="flex items-start gap-2.5 p-3 bg-red-500/5 border border-red-500/20 rounded-xl">
               <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-bold text-red-300">Low Stock: {r.grade}</p>
-                <p className="text-[10px] text-slate-400">{r.wireDiaMm}mm · {r.totalWeightKg} kg left</p>
+                <p className="text-xs font-bold text-red-300">Low Stock: {r.name}</p>
+                <p className="text-[10px] text-slate-400">{r.category} · {r.quantity} {r.unit} left</p>
               </div>
             </div>
           ))}

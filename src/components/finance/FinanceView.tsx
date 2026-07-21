@@ -148,7 +148,7 @@ export default function FinanceView({ invoices, setInvoices, purchaseOrders, set
                   <p className="text-sm font-bold text-slate-200">{po.supplierName}</p>
                   <p className="text-[10px] text-slate-500">PO Date: {po.poDate} · Expected: {po.expectedDate}</p>
                   {po.items.map((item, i) => (
-                    <p key={i} className="text-[10px] text-slate-400 mt-0.5">{item.description} · {item.grade} · {item.qty} {item.unit}</p>
+                    <p key={i} className="text-[10px] text-slate-400 mt-0.5">{item.description} · {item.qty} {item.unit}</p>
                   ))}
                 </div>
                 <div className="text-right">

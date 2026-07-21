@@ -22,7 +22,7 @@ const STATUS_BADGE: Record<OrderStatus, string> = {
   invoiced: "bg-teal-500/20 text-teal-400 border-teal-500/30",
 };
 
-const CUST_TYPES: CustomerType[] = ["Railway","Local","Automotive","Industrial"];
+const CUST_TYPES: CustomerType[] = ["Railway","Automotive","Industrial","Construction","Consumer","Export","Other"];
 
 export default function SalesView({ salesOrders, setSalesOrders, dispatches, setDispatches: _setDispatches, customers, setCustomers, boms, finishedGoods: _finishedGoods, currentUser }: Props) {
   const [tab, setTab] = useState<Tab>("orders");
@@ -44,7 +44,7 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
   };
 
   // Order items
-  const [orderItems, setOrderItems] = useState([{ bomId:"", drawingNo:"", springName:"", qty:0, unitPrice:0, amount:0 }]);
+  const [orderItems, setOrderItems] = useState([{ bomId:"", productCode:"", productName:"", qty:0, unitPrice:0, amount:0 }]);
   const [orderForm, setOrderForm] = useState({ orderNo:`SO-2026-${String(salesOrders.length+1).padStart(3,"0")}`, customerId:"", customerName:"", poNo:"", poDate: new Date().toISOString().split("T")[0], deliveryDate:"", remarks:"" });
   const of = (k: string, v: any) => setOrderForm(p => ({...p,[k]:v}));
 
@@ -56,7 +56,7 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
 
   const handleBOMSelect = (idx: number, bomId: string) => {
     const bom = boms.find(b => b.id === bomId);
-    setOrderItems(prev => prev.map((item, i) => i === idx ? { ...item, bomId, drawingNo: bom?.drawingNo || "", springName: bom?.springName || "" } : item));
+    setOrderItems(prev => prev.map((item, i) => i === idx ? { ...item, bomId, productCode: bom?.productCode || "", productName: bom?.productName || "" } : item));
   };
 
   const updateItem = (idx: number, k: string, v: any) => {
@@ -73,7 +73,7 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
     const total = orderItems.reduce((s, i) => s + i.amount, 0);
     const order: SalesOrder = {
       id: `so-${Date.now()}`, ...orderForm,
-      items: orderItems.filter(i => i.bomId),
+      items: orderItems.filter(i => i.bomId).map(i => ({ bomId: i.bomId, productCode: i.productCode, productName: i.productName, qty: i.qty, unitPrice: i.unitPrice, amount: i.amount })),
       totalAmount: total, status: "confirmed",
       createdAt: new Date().toISOString().split("T")[0],
     };
@@ -134,8 +134,8 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
                   <div className="mt-2 space-y-1">
                     {o.items.map((item, i) => (
                       <div key={i} className="flex items-center justify-between text-[10px] bg-slate-900/40 rounded px-2.5 py-1.5">
-                        <span className="text-slate-300"><span className="font-mono text-slate-500">{item.drawingNo}</span> — {item.springName}</span>
-                        <span className="text-white font-bold">{item.qty} nos × {formatINR(item.unitPrice)}</span>
+                        <span className="text-slate-300"><span className="font-mono text-slate-500">{item.productCode}</span> — {item.productName}</span>
+                        <span className="text-white font-bold">{item.qty} × {formatINR(item.unitPrice)}</span>
                       </div>
                     ))}
                   </div>
@@ -171,8 +171,7 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
                   {d.eWayBillNo && <p className="text-[10px] text-blue-400 font-mono mt-0.5">e-Way: {d.eWayBillNo}</p>}
                 </div>
                 <div className="text-right text-xs">
-                  <p className="font-bold text-white">{d.totalQty.toLocaleString()} nos</p>
-                  <p className="text-slate-400">{d.totalWeightKg} kg</p>
+                  <p className="font-bold text-white">{d.totalQty.toLocaleString()} units</p>
                 </div>
               </div>
             </div>
@@ -244,7 +243,7 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Order Items</label>
-                  <button type="button" onClick={() => setOrderItems(prev => [...prev, {bomId:"",drawingNo:"",springName:"",qty:0,unitPrice:0,amount:0}])}
+                  <button type="button" onClick={() => setOrderItems(prev => [...prev, {bomId:"",productCode:"",productName:"",qty:0,unitPrice:0,amount:0}])}
                     className="text-[10px] text-orange-400 hover:text-orange-300 font-bold cursor-pointer">+ Add Item</button>
                 </div>
                 {orderItems.map((item, i) => (
@@ -253,7 +252,7 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
                       <label className="text-[9px] text-slate-500">Spring (Drawing)</label>
                       <select value={item.bomId} onChange={e => handleBOMSelect(i, e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-[10px] text-white focus:outline-none">
                         <option value="">— Select —</option>
-                        {boms.map(b => <option key={b.id} value={b.id}>{b.drawingNo} — {b.springName}</option>)}
+                        {boms.map(b => <option key={b.id} value={b.id}>{b.productCode} — {b.productName}</option>)}
                       </select>
                     </div>
                     <div className="space-y-1">

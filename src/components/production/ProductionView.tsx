@@ -16,24 +16,25 @@ const STATUS_COLORS: Record<ProductionStatus, string> = {
   cancelled: "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
-const MACHINES = ["CNC Coiling M/C #1","CNC Coiling M/C #2","Auto Coiling M/C #3","Manual Coiling #4"];
+const MACHINES = ["Machine #1","Machine #2","Machine #3","Machine #4","Manual Station #1"];
 
-export default function ProductionView({ productionOrders, setProductionOrders, boms, rawMaterials, currentUser }: Props) {
+export default function ProductionView({ productionOrders, setProductionOrders, boms, currentUser }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<ProductionOrder | null>(null);
   const [filterStatus, setFilterStatus] = useState<ProductionStatus | "all">("all");
   const canWrite = ["superadmin","manager","operator"].includes(currentUser.role);
   const canAdmin = ["superadmin","manager"].includes(currentUser.role);
 
-  const BLANK = () => ({
+  const BLANK = (): Omit<ProductionOrder,"id"> => ({
     orderNo: `PRD-2026-${String(productionOrders.length + 1).padStart(3,"0")}`,
-    bomId: boms[0]?.id || "", drawingNo: "", springName: "",
+    bomId: boms[0]?.id || "",
+    productCode: boms[0]?.productCode || "",
+    productName: boms[0]?.productName || "",
     plannedQty: 0, producedQty: 0, rejectedQty: 0,
-    rawMaterialId: "", heatNo: "",
     batchNo: `B2026-${String(productionOrders.length + 1).padStart(3,"0")}`,
     machine: MACHINES[0], operatorId: currentUser.id, operatorName: currentUser.name,
     startDate: new Date().toISOString().split("T")[0],
-    targetDate: "", status: "planned" as ProductionStatus,
+    targetDate: "", status: "planned",
   });
 
   const [form, setForm] = useState(BLANK());
@@ -41,19 +42,12 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
 
   const handleBOMChange = (bomId: string) => {
     const bom = boms.find(b => b.id === bomId);
-    f("bomId", bomId);
-    if (bom) { f("drawingNo", bom.drawingNo); f("springName", bom.springName); }
-  };
-
-  const handleRMChange = (rmId: string) => {
-    const rm = rawMaterials.find(r => r.id === rmId);
-    f("rawMaterialId", rmId);
-    if (rm) f("heatNo", rm.heatNo);
+    setForm(p => ({ ...p, bomId, productCode: bom?.productCode || "", productName: bom?.productName || "" }));
   };
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.bomId || form.plannedQty <= 0) { toast.error("Select BOM and enter planned qty"); return; }
+    if (!form.bomId || form.plannedQty <= 0) { toast.error("Select product BOM and enter planned qty"); return; }
     if (editing) {
       setProductionOrders(prev => prev.map(p => p.id === editing.id ? { ...editing, ...form } : p));
       toast.success("Updated", form.orderNo);
@@ -72,15 +66,15 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
     toast.success("Status Updated");
   };
 
-  const openEdit = (o: ProductionOrder) => { setEditing(o); setForm({...o} as any); setShowModal(true); };
+  const openEdit = (o: ProductionOrder) => { setEditing(o); setForm({ ...o }); setShowModal(true); };
   const openNew = () => { setEditing(null); setForm(BLANK()); setShowModal(true); };
 
   const handleExport = async () => {
     const XLSX = await import("xlsx");
     const rows = productionOrders.map(o => ({
-      "Order No": o.orderNo, "Drawing No": o.drawingNo, "Spring Name": o.springName,
+      "Order No": o.orderNo, "Product Code": o.productCode, "Product Name": o.productName,
       "Batch No": o.batchNo, "Planned Qty": o.plannedQty, "Produced Qty": o.producedQty,
-      "Rejected Qty": o.rejectedQty, "Heat No": o.heatNo || "", "Machine": o.machine,
+      "Rejected Qty": o.rejectedQty, "Machine": o.machine,
       "Operator": o.operatorName, "Start Date": o.startDate, "Target Date": o.targetDate,
       "Status": o.status,
     }));
@@ -103,7 +97,6 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
         </div>
       </div>
 
-      {/* Status Filter */}
       <div className="flex gap-2 flex-wrap">
         {(["all","planned","in_progress","completed","on_hold","cancelled"] as const).map(s => (
           <button key={s} onClick={() => setFilterStatus(s)}
@@ -113,7 +106,6 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
         ))}
       </div>
 
-      {/* Orders */}
       <div className="space-y-3">
         {filtered.map(o => {
           const progress = o.plannedQty > 0 ? Math.round((o.producedQty / o.plannedQty) * 100) : 0;
@@ -121,18 +113,17 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
             <div key={o.id} className="bg-slate-950/40 border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition-all">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-mono text-xs font-black text-white">{o.orderNo}</span>
                     <span className="text-slate-600">·</span>
                     <span className="font-mono text-xs text-slate-400">Batch: {o.batchNo}</span>
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border font-mono uppercase ${STATUS_COLORS[o.status]}`}>{o.status.replace("_"," ")}</span>
                   </div>
-                  <p className="text-sm font-bold text-slate-200">{o.springName}</p>
-                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">{o.drawingNo}</p>
-                  <div className="flex gap-4 mt-2 text-[10px] text-slate-400">
+                  <p className="text-sm font-bold text-slate-200">{o.productName}</p>
+                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">{o.productCode}</p>
+                  <div className="flex gap-4 mt-2 text-[10px] text-slate-400 flex-wrap">
                     <span>Machine: <span className="text-slate-200 font-semibold">{o.machine}</span></span>
                     <span>Operator: <span className="text-slate-200 font-semibold">{o.operatorName}</span></span>
-                    {o.heatNo && <span>Heat: <span className="text-slate-200 font-semibold font-mono">{o.heatNo}</span></span>}
                   </div>
                 </div>
                 <div className="text-right shrink-0 space-y-1">
@@ -145,7 +136,6 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
                 </div>
               </div>
 
-              {/* Progress Bar */}
               <div className="mt-3">
                 <div className="flex justify-between text-[10px] text-slate-500 mb-1">
                   <span>Progress</span><span>{progress}%</span>
@@ -166,9 +156,9 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
             </div>
           );
         })}
+        {filtered.length === 0 && <div className="text-center py-16 text-slate-500 text-xs bg-slate-950/40 rounded-xl border border-slate-800">No production orders</div>}
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -188,17 +178,10 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400">Spring (BOM) *</label>
+                <label className="text-[10px] font-bold text-slate-400">Product (BOM) *</label>
                 <select value={form.bomId} onChange={e => handleBOMChange(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
-                  <option value="">— Select —</option>
-                  {boms.map(b => <option key={b.id} value={b.id}>{b.drawingNo} — {b.springName}</option>)}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400">Raw Material (Heat No)</label>
-                <select value={form.rawMaterialId} onChange={e => handleRMChange(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500">
-                  <option value="">— Select —</option>
-                  {rawMaterials.filter(r => r.status !== "out_of_stock").map(r => <option key={r.id} value={r.id}>{r.heatNo} — {r.grade} {r.wireDiaMm}mm ({r.totalWeightKg}kg)</option>)}
+                  <option value="">— Select Product —</option>
+                  {boms.filter(b => b.status === "active").map(b => <option key={b.id} value={b.id}>{b.productCode} — {b.productName}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -231,6 +214,10 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
                   </select>
                 </div>
               )}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400">Remarks</label>
+                <input value={form.remarks||""} onChange={e => f("remarks", e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-orange-500" />
+              </div>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 rounded-lg border border-slate-700 text-slate-400 py-2 text-xs font-bold cursor-pointer hover:text-white">Cancel</button>
                 <button type="submit" className="flex-1 rounded-lg bg-orange-600 hover:bg-orange-500 text-white py-2 text-xs font-bold cursor-pointer">Save</button>

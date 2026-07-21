@@ -78,7 +78,7 @@ export default function App() {
           {sidebarOpen && (
             <div className="min-w-0">
               <p className="text-xs font-black text-white font-mono tracking-wide truncate">DEINRIM MFG</p>
-              <p className="text-[9px] text-slate-500 font-mono uppercase tracking-widest">Spring Manufacturing</p>
+              <p className="text-[9px] text-slate-500 font-mono uppercase tracking-widest">Manufacturing OMS</p>
             </div>
           )}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="ml-auto text-slate-500 hover:text-white cursor-pointer shrink-0">
@@ -129,7 +129,7 @@ export default function App() {
         <div className="p-6 max-w-[1400px] mx-auto">
           {activeModule === "dashboard"   && <DashboardView rawMaterials={rawMaterials} boms={boms} productionOrders={productionOrders} qcRecords={qcRecords} finishedGoods={finishedGoods} salesOrders={salesOrders} invoices={invoices} />}
           {activeModule === "rawmaterial" && <RawMaterialView rawMaterials={rawMaterials} setRawMaterials={setRawMaterials} currentUser={currentUser} />}
-          {activeModule === "bom"         && <BOMView boms={boms} setBoms={setBoms} currentUser={currentUser} />}
+          {activeModule === "bom"         && <BOMView boms={boms} setBoms={setBoms} rawMaterials={rawMaterials} currentUser={currentUser} />}
           {activeModule === "production"  && <ProductionView productionOrders={productionOrders} setProductionOrders={setProductionOrders} boms={boms} rawMaterials={rawMaterials} currentUser={currentUser} />}
           {activeModule === "quality"     && <QualityView qcRecords={qcRecords} setQcRecords={setQcRecords} productionOrders={productionOrders} setFinishedGoods={setFinishedGoods} boms={boms} currentUser={currentUser} />}
           {activeModule === "finished"    && <FinishedGoodsView finishedGoods={finishedGoods} setFinishedGoods={setFinishedGoods} boms={boms} currentUser={currentUser} />}

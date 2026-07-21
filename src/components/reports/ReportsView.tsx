@@ -9,11 +9,6 @@ interface Props {
   purchaseOrders: PurchaseOrder[]; boms: BOMItem[]; currentUser: User;
 }
 
-interface ReportDef {
-  id: string; title: string; description: string; icon: any; color: string; bg: string;
-  generate: () => Promise<void>;
-}
-
 export default function ReportsView({ rawMaterials, productionOrders, qcRecords, finishedGoods, salesOrders, invoices, purchaseOrders, boms }: Props) {
 
   const exportXLSX = async (rows: object[], sheetName: string, filename: string) => {
@@ -24,7 +19,7 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
     toast.success("Report Downloaded", filename);
   };
 
-  const reports: ReportDef[] = [
+  const reports = [
     {
       id: "production-summary",
       title: "Production Summary",
@@ -32,11 +27,11 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
       icon: Factory, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20",
       generate: async () => {
         const rows = productionOrders.map(o => ({
-          "Order No": o.orderNo, "Spring Name": o.springName, "Drawing No": o.drawingNo,
-          "Planned Qty": o.plannedQty, "Produced Qty": o.producedQty, "Rejected Qty": o.rejectedQty,
-          "Good Qty": o.producedQty - o.rejectedQty, "Heat No": o.heatNo, "Batch No": o.batchNo,
-          "Machine": o.machine, "Operator": o.operatorName, "Start Date": o.startDate,
-          "Target Date": o.targetDate, "Status": o.status,
+          "Order No": o.orderNo, "Product Code": o.productCode, "Product Name": o.productName,
+          "Batch No": o.batchNo, "Planned Qty": o.plannedQty, "Produced Qty": o.producedQty,
+          "Rejected Qty": o.rejectedQty, "Good Qty": o.producedQty - o.rejectedQty,
+          "Machine": o.machine, "Operator": o.operatorName,
+          "Start Date": o.startDate, "Target Date": o.targetDate, "Status": o.status,
           "Efficiency %": o.plannedQty > 0 ? ((o.producedQty / o.plannedQty) * 100).toFixed(1) : "—",
         }));
         await exportXLSX(rows, "Production", "Production_Summary.xlsx");
@@ -45,15 +40,16 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
     {
       id: "raw-material",
       title: "Raw Material Inventory",
-      description: "Current RM stock — grade-wise, heat-wise, with mill certificate status",
+      description: "Current RM stock — category-wise, with supplier and stock value",
       icon: Package, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20",
       generate: async () => {
         const rows = rawMaterials.map(r => ({
-          "Heat No": r.heatNo, "Grade": r.grade, "Wire Dia (mm)": r.wireDiaMm,
-          "Coil Wt (kg)": r.coilWeightKg, "Qty Coils": r.quantityCoils,
-          "Total Wt (kg)": r.totalWeightKg, "Supplier": r.supplier,
-          "Received Date": r.receivedDate, "Mill Test Cert": r.millTestCert ? "Yes" : "No",
-          "Status": r.status.replace("_"," "), "Remarks": r.remarks || "",
+          "Code": r.code, "Name": r.name, "Category": r.category, "Unit": r.unit,
+          "Qty": r.quantity, "Unit Cost (₹)": r.unitCost, "Stock Value (₹)": r.totalValue,
+          "Min Stock": r.minStock, "Supplier": r.supplier,
+          "Batch No": r.batchNo || "", "Received Date": r.receivedDate,
+          "Location": r.location || "", "Status": r.status.replace("_"," "),
+          "Remarks": r.remarks || "",
         }));
         await exportXLSX(rows, "RawMaterial", "RawMaterial_Inventory.xlsx");
       },
@@ -61,16 +57,16 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
     {
       id: "quality-report",
       title: "Quality Inspection Report",
-      description: "All QC records — dimensional check, load test, hardness, RITES certificates",
+      description: "All QC records — parameter checks, pass/fail, inspection agency, certificates",
       icon: ShieldCheck, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20",
       generate: async () => {
         const rows = qcRecords.map(q => ({
-          "Batch No": q.batchNo, "Spring Name": q.springName, "Drawing No": q.drawingNo,
+          "Batch No": q.batchNo, "Product Code": q.productCode, "Product Name": q.productName,
           "Inspected Qty": q.inspectedQty, "Passed Qty": q.passedQty, "Rejected Qty": q.rejectedQty,
-          "Load Test (kg)": q.loadTestKg, "Load Result": q.loadResult,
-          "Hardness (HRC)": q.hardnessHRC, "Hardness Result": q.hardnessResult,
+          "Parameters Checked": q.checks.length,
+          "Failed Parameters": q.checks.filter(c => c.result === "Fail").map(c => c.parameter).join(", ") || "None",
           "Overall Result": q.overallResult, "Inspector": q.inspectorName,
-          "Agency": q.inspectionAgency, "Certificate No": q.certificateNo || "—",
+          "Agency": q.inspectionAgency || "", "Certificate No": q.certificateNo || "—",
           "Inspection Date": q.inspectionDate,
         }));
         await exportXLSX(rows, "QC", "Quality_Inspection_Report.xlsx");
@@ -86,7 +82,7 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
           "Order No": o.orderNo, "Customer": o.customerName, "PO No": o.poNo,
           "PO Date": o.poDate, "Delivery Date": o.deliveryDate,
           "Total Amount": o.totalAmount, "Status": o.status.replace("_"," "),
-          "Items": o.items.map(i => `${i.springName} x${i.qty}`).join("; "),
+          "Items": o.items.map(i => `${i.productCode} — ${i.productName} x${i.qty}`).join("; "),
         }));
         await exportXLSX(rows, "SalesOrders", "Sales_Order_Register.xlsx");
       },
@@ -109,12 +105,12 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
     {
       id: "finished-goods",
       title: "Finished Goods Stock",
-      description: "FG inventory — spring-wise qty, weight, location, QC status",
+      description: "FG inventory — product-wise qty, unit, location",
       icon: Package, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20",
       generate: async () => {
         const rows = finishedGoods.map(f => ({
-          "Drawing No": f.drawingNo, "Spring Name": f.springName,
-          "Qty (nos)": f.quantityNos, "Total Wt (kg)": f.weightKgTotal,
+          "Product Code": f.productCode, "Product Name": f.productName,
+          "Qty": f.quantityNos, "Unit": f.unit,
           "Location": f.location, "Batch No": f.batchNo,
           "Received Date": f.receivedDate, "Remarks": f.remarks || "",
         }));
@@ -130,28 +126,26 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
         const rows = purchaseOrders.map(p => ({
           "PO No": p.poNo, "Supplier": p.supplierName, "PO Date": p.poDate,
           "Expected Date": p.expectedDate, "Total Amount": p.totalAmount, "Status": p.status,
-          "Items": p.items.map(i => `${i.description} ${i.grade} x${i.qty}${i.unit}`).join("; "),
+          "Items": p.items.map(i => `${i.description} x${i.qty} ${i.unit}`).join("; "),
         }));
         await exportXLSX(rows, "PurchaseOrders", "Purchase_Order_Register.xlsx");
       },
     },
     {
       id: "bom-register",
-      title: "BOM / Spring Spec Register",
-      description: "Complete spring specifications — dimensions, grade, RDSO drawing, weight",
+      title: "BOM / Product Spec Register",
+      description: "All products — specifications, raw materials, cost per unit",
       icon: FileSpreadsheet, color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20",
       generate: async () => {
         const rows = boms.map(b => ({
-          "Drawing No": b.drawingNo, "Spring Name": b.springName, "Type": b.springType,
-          "Customer Type": b.customerType, "RDSO Spec": b.rdsoSpec || "—",
-          "Grade": b.grade, "Wire Dia (mm)": b.wireDiaMm, "OD (mm)": b.outerDiaMm,
-          "Free Height (mm)": b.freeHeightMm, "Total Coils": b.totalCoils,
-          "Active Coils": b.activeCoils, "Spring Rate (N/mm)": b.springRateNMm,
-          "Fitted Load (kg)": b.fittedLoadKg, "End Type": b.endType,
-          "Heat Treatment": b.heatTreatment, "Wt Each (kg)": b.weightKgEach,
-          "RM Consumption (kg)": b.rmConsumptionKg,
+          "Product Code": b.productCode, "Product Name": b.productName,
+          "Category": b.category, "Unit": b.unit, "Customer Type": b.customerType,
+          "Specifications": b.specifications,
+          "Raw Materials": b.rawMaterials.map(r => `${r.materialName} x${r.qtyPerUnit}${r.unit}`).join("; "),
+          "Labour Hrs/Unit": b.labourHrsPerUnit, "Machine Hrs/Unit": b.machineHrsPerUnit,
+          "Cost/Unit (₹)": b.costPerUnit, "Revision": b.revision, "Status": b.status,
         }));
-        await exportXLSX(rows, "BOM", "BOM_Spring_Specs.xlsx");
+        await exportXLSX(rows, "BOM", "BOM_Product_Register.xlsx");
       },
     },
     {
@@ -175,13 +169,13 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
           ["Total Received (₹)", invoices.reduce((s,i) => s+i.paidAmount,0)],
           ["Outstanding (₹)", invoices.reduce((s,i) => s+i.balanceAmount,0)],
           ["", ""],
-          ["RM Stock (kg)", rawMaterials.reduce((s,r) => s+r.totalWeightKg,0)],
+          ["RM Stock Value (₹)", rawMaterials.reduce((s,r) => s+r.totalValue,0)],
           ["FG Stock (pcs)", finishedGoods.reduce((s,f) => s+f.quantityNos,0)],
           ["QC Pass Rate", qcRecords.length > 0 ? `${((qcRecords.filter(q=>q.overallResult==="Pass").length/qcRecords.length)*100).toFixed(1)}%` : "—"],
         ];
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(kpi), "KPI Summary");
 
-        const prodRows = productionOrders.map(o => ({ "Order No":o.orderNo,"Spring":o.springName,"Status":o.status,"Produced":o.producedQty,"Planned":o.plannedQty }));
+        const prodRows = productionOrders.map(o => ({ "Order No":o.orderNo,"Product":o.productName,"Status":o.status,"Produced":o.producedQty,"Planned":o.plannedQty }));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(prodRows), "Production");
 
         const invRows = invoices.map(i => ({ "Invoice":i.invoiceNo,"Customer":i.customerName,"Total":i.totalAmount,"Paid":i.paidAmount,"Balance":i.balanceAmount,"Status":i.status }));
@@ -193,11 +187,10 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
     },
   ];
 
-  // Quick stats
-  const totalInvoiced = invoices.reduce((s,i) => s+i.totalAmount,0);
+  const totalInvoiced    = invoices.reduce((s,i) => s+i.totalAmount,0);
   const totalOutstanding = invoices.reduce((s,i) => s+i.balanceAmount,0);
-  const qcPassRate = qcRecords.length > 0 ? ((qcRecords.filter(q=>q.overallResult==="Pass").length/qcRecords.length)*100).toFixed(0) : "—";
-  const totalProduced = productionOrders.reduce((s,p) => s+p.producedQty,0);
+  const qcPassRate       = qcRecords.length > 0 ? ((qcRecords.filter(q=>q.overallResult==="Pass").length/qcRecords.length)*100).toFixed(0) : "—";
+  const totalProduced    = productionOrders.reduce((s,p) => s+p.producedQty,0);
 
   return (
     <div className="space-y-5 animate-fadeIn">
@@ -206,13 +199,12 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
         <p className="text-slate-400 text-sm mt-1">One-click Excel export for all modules</p>
       </div>
 
-      {/* Quick KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label:"Total Invoiced",  value: formatINR(totalInvoiced),  color:"text-white" },
-          { label:"Outstanding",     value: formatINR(totalOutstanding),color: totalOutstanding > 0 ? "text-amber-400" : "text-emerald-400" },
-          { label:"QC Pass Rate",    value: qcPassRate + "%",           color:"text-emerald-400" },
-          { label:"Total Produced",  value: totalProduced + " pcs",     color:"text-blue-400" },
+          { label:"Total Invoiced",  value: formatINR(totalInvoiced),   color:"text-white" },
+          { label:"Outstanding",     value: formatINR(totalOutstanding), color: totalOutstanding > 0 ? "text-amber-400" : "text-emerald-400" },
+          { label:"QC Pass Rate",    value: qcPassRate + "%",            color:"text-emerald-400" },
+          { label:"Total Produced",  value: totalProduced + " pcs",      color:"text-blue-400" },
         ].map(c => (
           <div key={c.label} className="bg-slate-950/40 border border-slate-800 rounded-xl p-4">
             <p className={`text-xl font-black ${c.color}`}>{c.value}</p>
@@ -221,10 +213,9 @@ export default function ReportsView({ rawMaterials, productionOrders, qcRecords,
         ))}
       </div>
 
-      {/* Report Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {reports.map(r => (
-          <div key={r.id} className={`bg-slate-950/40 border rounded-xl p-5 hover:border-slate-600 transition-all`} style={{ borderColor:"rgb(30 41 59)" }}>
+          <div key={r.id} className="bg-slate-950/40 border border-slate-800 rounded-xl p-5 hover:border-slate-600 transition-all">
             <div className="flex items-start justify-between mb-3">
               <div className={`h-9 w-9 rounded-lg border flex items-center justify-center ${r.bg}`}>
                 <r.icon className={`h-4 w-4 ${r.color}`} />
