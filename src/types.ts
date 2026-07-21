@@ -211,7 +211,7 @@ export interface PurchaseOrder {
   poNo: string;
   supplierId: string;
   supplierName: string;
-  items: { description: string; qty: number; unit: string; unitPrice: number; amount: number }[];
+  items: { materialId?: string; description: string; qty: number; unit: string; unitPrice: number; amount: number }[];
   totalAmount: number;
   poDate: string;
   expectedDate: string;

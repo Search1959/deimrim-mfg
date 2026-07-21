@@ -69,7 +69,7 @@ export default function MRPView({ salesOrders, boms, rawMaterials, purchaseOrder
       supplierId: sup.id, supplierName: sup.name,
       poDate: new Date().toISOString().split("T")[0],
       expectedDate: new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
-      items: [{ description: line.materialName, qty: orderQty, unit: line.unit, unitPrice, amount: total }],
+      items: [{ materialId: line.materialId, description: line.materialName, qty: orderQty, unit: line.unit, unitPrice, amount: total }],
       totalAmount: total, status: "draft",
     };
     setPurchaseOrders(prev => [po, ...prev]);

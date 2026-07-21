@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Factory, Plus, X, Download, Edit, CheckCircle, Clock, AlertTriangle } from "lucide-react";
-import type { ProductionOrder, ProductionStatus, BOMItem, RawMaterial, User } from "../../types";
+import type { ProductionOrder, ProductionStatus, BOMItem, User } from "../../types";
 import { toast } from "../../utils/toast";
 
 interface Props {
   productionOrders: ProductionOrder[]; setProductionOrders: React.Dispatch<React.SetStateAction<ProductionOrder[]>>;
-  boms: BOMItem[]; rawMaterials: RawMaterial[]; currentUser: User;
+  boms: BOMItem[]; currentUser: User;
 }
 
 const STATUS_COLORS: Record<ProductionStatus, string> = {

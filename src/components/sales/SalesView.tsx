@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ShoppingCart, Plus, X, Download, Truck, Building2 } from "lucide-react";
-import type { SalesOrder, Dispatch, Customer, BOMItem, FinishedGood, User, OrderStatus, CustomerType } from "../../types";
+import type { SalesOrder, Dispatch, DispatchItem, Customer, BOMItem, FinishedGood, Invoice, User, OrderStatus, CustomerType } from "../../types";
 import { formatINR } from "../../types";
 import { toast } from "../../utils/toast";
 
@@ -8,7 +8,10 @@ interface Props {
   salesOrders: SalesOrder[]; setSalesOrders: React.Dispatch<React.SetStateAction<SalesOrder[]>>;
   dispatches: Dispatch[]; setDispatches: React.Dispatch<React.SetStateAction<Dispatch[]>>;
   customers: Customer[]; setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
-  boms: BOMItem[]; finishedGoods: FinishedGood[]; currentUser: User;
+  boms: BOMItem[];
+  finishedGoods: FinishedGood[]; setFinishedGoods: React.Dispatch<React.SetStateAction<FinishedGood[]>>;
+  setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
+  currentUser: User;
 }
 
 type Tab = "orders" | "dispatch" | "customers";
@@ -24,10 +27,14 @@ const STATUS_BADGE: Record<OrderStatus, string> = {
 
 const CUST_TYPES: CustomerType[] = ["Railway","Automotive","Industrial","Construction","Consumer","Export","Other"];
 
-export default function SalesView({ salesOrders, setSalesOrders, dispatches, setDispatches: _setDispatches, customers, setCustomers, boms, finishedGoods: _finishedGoods, currentUser }: Props) {
+const BLANK_DISPATCH = () => ({ challanNo: `DC-${Date.now().toString().slice(-6)}`, vehicleNo: "", driverName: "", eWayBillNo: "", remarks: "" });
+
+export default function SalesView({ salesOrders, setSalesOrders, dispatches, setDispatches, customers, setCustomers, boms, finishedGoods, setFinishedGoods, setInvoices, currentUser }: Props) {
   const [tab, setTab] = useState<Tab>("orders");
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showCustModal, setShowCustModal] = useState(false);
+  const [dispatchOrder, setDispatchOrder] = useState<SalesOrder | null>(null);
+  const [dispatchForm, setDispatchForm] = useState(BLANK_DISPATCH());
   const canWrite = ["superadmin","manager","sales"].includes(currentUser.role);
 
   // Customer Form
@@ -85,6 +92,88 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
   const updateOrderStatus = (id: string, status: OrderStatus) => {
     setSalesOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
     toast.success("Status Updated");
+  };
+
+  const openDispatchModal = (order: SalesOrder) => {
+    setDispatchOrder(order);
+    setDispatchForm(BLANK_DISPATCH());
+  };
+
+  const confirmDispatch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dispatchOrder) return;
+
+    const today = new Date().toISOString().split("T")[0];
+
+    // Build dispatch items from order items; find matching FG batches
+    const dispatchItems: DispatchItem[] = dispatchOrder.items.map(item => {
+      const fg = finishedGoods.find(g => g.productCode === item.productCode && g.quantityNos >= item.qty);
+      return { productCode: item.productCode, productName: item.productName, batchNo: fg?.batchNo || "—", qty: item.qty, unit: fg?.unit || "pcs" };
+    });
+
+    // Create dispatch record
+    const dispatch: Dispatch = {
+      id: `dc-${Date.now()}`,
+      challanNo: dispatchForm.challanNo,
+      salesOrderId: dispatchOrder.id,
+      customerId: dispatchOrder.customerId,
+      customerName: dispatchOrder.customerName,
+      dispatchDate: today,
+      items: dispatchItems,
+      totalQty: dispatchItems.reduce((s, i) => s + i.qty, 0),
+      vehicleNo: dispatchForm.vehicleNo || undefined,
+      driverName: dispatchForm.driverName || undefined,
+      eWayBillNo: dispatchForm.eWayBillNo || undefined,
+      remarks: dispatchForm.remarks || undefined,
+    };
+    setDispatches(prev => [dispatch, ...prev]);
+
+    // Deduct from FG stock (FIFO: deduct from first matching batch)
+    dispatchOrder.items.forEach(item => {
+      let remaining = item.qty;
+      setFinishedGoods(prev => {
+        const updated = [...prev];
+        for (let i = 0; i < updated.length && remaining > 0; i++) {
+          if (updated[i].productCode === item.productCode) {
+            const deduct = Math.min(updated[i].quantityNos, remaining);
+            updated[i] = { ...updated[i], quantityNos: updated[i].quantityNos - deduct };
+            remaining -= deduct;
+          }
+        }
+        return updated.filter(g => g.quantityNos > 0);
+      });
+    });
+
+    // Auto-create draft invoice in Finance
+    const cust = customers.find(c => c.id === dispatchOrder.customerId);
+    const subtotal = dispatchOrder.totalAmount;
+    const taxPct = 18;
+    const taxAmount = Math.round(subtotal * taxPct / 100);
+    const total = subtotal + taxAmount;
+    const invoice: Invoice = {
+      id: `inv-${Date.now()}`,
+      invoiceNo: `INV-${today.replace(/-/g,"")}-${Math.floor(Math.random()*900+100)}`,
+      salesOrderId: dispatchOrder.id,
+      customerId: dispatchOrder.customerId,
+      customerName: dispatchOrder.customerName,
+      gstin: cust?.gstin,
+      invoiceDate: today,
+      dueDate: new Date(Date.now() + (cust?.creditDays || 30) * 86400000).toISOString().split("T")[0],
+      items: dispatchOrder.items.map(i => ({ productCode: i.productCode, productName: i.productName, qty: i.qty, unit: "pcs", unitPrice: i.unitPrice, taxPct, amount: i.amount })),
+      subtotal,
+      taxAmount,
+      totalAmount: total,
+      paidAmount: 0,
+      balanceAmount: total,
+      status: "draft",
+    };
+    setInvoices(prev => [invoice, ...prev]);
+
+    // Update order status
+    setSalesOrders(prev => prev.map(o => o.id === dispatchOrder.id ? { ...o, status: "dispatched" } : o));
+
+    toast.success("Dispatch Confirmed", `Challan ${dispatch.challanNo} · Invoice ${invoice.invoiceNo} created`);
+    setDispatchOrder(null);
   };
 
   const handleExport = async () => {
@@ -149,7 +238,7 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
                 <div className="flex gap-1.5 mt-3 pt-3 border-t border-slate-800">
                   {o.status === "confirmed" && <button onClick={() => updateOrderStatus(o.id, "in_production")} className="px-2.5 py-1 rounded bg-orange-500/20 border border-orange-500/20 text-orange-300 text-[10px] font-bold cursor-pointer">→ In Production</button>}
                   {o.status === "in_production" && <button onClick={() => updateOrderStatus(o.id, "ready")} className="px-2.5 py-1 rounded bg-violet-500/20 border border-violet-500/20 text-violet-300 text-[10px] font-bold cursor-pointer">→ Ready</button>}
-                  {o.status === "ready" && <button onClick={() => updateOrderStatus(o.id, "dispatched")} className="px-2.5 py-1 rounded bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold cursor-pointer flex items-center gap-1"><Truck className="h-3 w-3" /> Dispatch</button>}
+                  {o.status === "ready" && <button onClick={() => openDispatchModal(o)} className="px-2.5 py-1 rounded bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold cursor-pointer flex items-center gap-1"><Truck className="h-3 w-3" /> Dispatch</button>}
                 </div>
               )}
             </div>
@@ -169,6 +258,11 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
                   <p className="text-sm font-bold text-slate-200 mt-0.5">{d.customerName}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">{d.dispatchDate} · Vehicle: {d.vehicleNo || "—"}</p>
                   {d.eWayBillNo && <p className="text-[10px] text-blue-400 font-mono mt-0.5">e-Way: {d.eWayBillNo}</p>}
+                  <div className="mt-2 space-y-1">
+                    {d.items.map((item, i) => (
+                      <p key={i} className="text-[10px] text-slate-400">{item.productCode} — {item.productName} · {item.qty} {item.unit} <span className="font-mono text-slate-500">({item.batchNo})</span></p>
+                    ))}
+                  </div>
                 </div>
                 <div className="text-right text-xs">
                   <p className="font-bold text-white">{d.totalQty.toLocaleString()} units</p>
@@ -202,6 +296,72 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Dispatch Modal */}
+      {dispatchOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-slate-800">
+              <div>
+                <h3 className="font-bold text-white text-sm flex items-center gap-2"><Truck className="h-4 w-4 text-emerald-400" /> Dispatch Order</h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">{dispatchOrder.orderNo} · {dispatchOrder.customerName}</p>
+              </div>
+              <button onClick={() => setDispatchOrder(null)} className="text-slate-400 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
+            </div>
+            <form onSubmit={confirmDispatch} className="p-5 space-y-4">
+              {/* Order items summary */}
+              <div className="bg-slate-800/40 rounded-xl p-3 space-y-1.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Items to Dispatch</p>
+                {dispatchOrder.items.map((item, i) => {
+                  const stock = finishedGoods.filter(g => g.productCode === item.productCode).reduce((s, g) => s + g.quantityNos, 0);
+                  return (
+                    <div key={i} className="flex items-center justify-between text-[10px]">
+                      <span className="text-slate-300">{item.productCode} — {item.productName}</span>
+                      <span className={stock >= item.qty ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
+                        {item.qty} pcs {stock < item.qty ? `(stock: ${stock})` : ""}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400">Challan No *</label>
+                  <input value={dispatchForm.challanNo} onChange={e => setDispatchForm(p=>({...p,challanNo:e.target.value}))} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500" required />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400">Vehicle No</label>
+                  <input value={dispatchForm.vehicleNo} onChange={e => setDispatchForm(p=>({...p,vehicleNo:e.target.value}))} placeholder="WB-01-AB-1234" className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400">Driver Name</label>
+                  <input value={dispatchForm.driverName} onChange={e => setDispatchForm(p=>({...p,driverName:e.target.value}))} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400">e-Way Bill No</label>
+                  <input value={dispatchForm.eWayBillNo} onChange={e => setDispatchForm(p=>({...p,eWayBillNo:e.target.value}))} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                </div>
+                <div className="space-y-1 col-span-2">
+                  <label className="text-[10px] font-bold text-slate-400">Remarks</label>
+                  <input value={dispatchForm.remarks} onChange={e => setDispatchForm(p=>({...p,remarks:e.target.value}))} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                </div>
+              </div>
+
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-[10px] text-emerald-300 space-y-0.5">
+                <p className="font-bold">On confirm this will:</p>
+                <p>• Create delivery challan · Deduct stock from Finished Goods</p>
+                <p>• Auto-create draft invoice in Finance (18% GST)</p>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={() => setDispatchOrder(null)} className="flex-1 rounded-lg border border-slate-700 text-slate-400 py-2 text-xs font-bold cursor-pointer hover:text-white">Cancel</button>
+                <button type="submit" className="flex-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white py-2 text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5"><Truck className="h-3.5 w-3.5" /> Confirm Dispatch</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -249,14 +409,14 @@ export default function SalesView({ salesOrders, setSalesOrders, dispatches, set
                 {orderItems.map((item, i) => (
                   <div key={i} className="grid grid-cols-4 gap-2 p-2.5 bg-slate-800/40 rounded-lg">
                     <div className="col-span-2 space-y-1">
-                      <label className="text-[9px] text-slate-500">Spring (Drawing)</label>
+                      <label className="text-[9px] text-slate-500">Product (BOM)</label>
                       <select value={item.bomId} onChange={e => handleBOMSelect(i, e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-[10px] text-white focus:outline-none">
                         <option value="">— Select —</option>
                         {boms.map(b => <option key={b.id} value={b.id}>{b.productCode} — {b.productName}</option>)}
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] text-slate-500">Qty (nos)</label>
+                      <label className="text-[9px] text-slate-500">Qty</label>
                       <input type="number" value={item.qty} onChange={e => updateItem(i, "qty", e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-[10px] text-white focus:outline-none" />
                     </div>
                     <div className="space-y-1">

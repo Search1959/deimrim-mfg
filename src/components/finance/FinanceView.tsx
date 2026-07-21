@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Banknote, Plus, X, Download, Building2 } from "lucide-react";
-import type { Invoice, PurchaseOrder, Supplier, Customer, SalesOrder, User } from "../../types";
+import type { Invoice, PurchaseOrder, Supplier, Customer, SalesOrder, RawMaterial, User } from "../../types";
 import { formatINR } from "../../types";
 import { toast } from "../../utils/toast";
 
@@ -8,6 +8,7 @@ interface Props {
   invoices: Invoice[]; setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
   purchaseOrders: PurchaseOrder[]; setPurchaseOrders: React.Dispatch<React.SetStateAction<PurchaseOrder[]>>;
   suppliers: Supplier[]; setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
+  rawMaterials: RawMaterial[]; setRawMaterials: React.Dispatch<React.SetStateAction<RawMaterial[]>>;
   customers: Customer[]; salesOrders: SalesOrder[]; currentUser: User;
 }
 
@@ -24,7 +25,7 @@ const PO_STATUS_BADGE: Record<string, string> = {
   received:"bg-emerald-500/20 text-emerald-400 border-emerald-500/30", closed:"bg-slate-700/50 text-slate-500 border-slate-600/30",
 };
 
-export default function FinanceView({ invoices, setInvoices, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, customers: _customers, currentUser }: Props) {
+export default function FinanceView({ invoices, setInvoices, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, rawMaterials: _rawMaterials, setRawMaterials, customers: _customers, currentUser }: Props) {
   const [tab, setTab] = useState<Tab>("invoices");
   const [showSupModal, setShowSupModal] = useState(false);
   const canWrite = ["superadmin","manager"].includes(currentUser.role);
@@ -52,8 +53,22 @@ export default function FinanceView({ invoices, setInvoices, purchaseOrders, set
   };
 
   const markPORec = (id: string) => {
+    const po = purchaseOrders.find(p => p.id === id);
+    if (po) {
+      // Auto-update RM stock for each PO item that has a materialId
+      po.items.forEach(item => {
+        if (item.materialId) {
+          setRawMaterials(prev => prev.map(rm => {
+            if (rm.id !== item.materialId) return rm;
+            const newQty = rm.quantity + item.qty;
+            const status: import("../../types").RMStatus = newQty <= 0 ? "out_of_stock" : newQty <= rm.minStock ? "low_stock" : "in_stock";
+            return { ...rm, quantity: newQty, totalValue: newQty * rm.unitCost, status };
+          }));
+        }
+      });
+    }
     setPurchaseOrders(prev => prev.map(p => p.id === id ? { ...p, status: "received" } : p));
-    toast.success("PO marked as Received");
+    toast.success("PO marked as Received — RM stock updated");
   };
 
   const exportInvoices = async () => {
