@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import {
   Factory, Lock, Mail, Eye, EyeOff, Package, BookOpen, ShieldCheck,
   Warehouse, ShoppingCart, Banknote, GitBranch, CheckCircle,
-  ArrowRight, Star
+  ArrowRight
 } from "lucide-react";
 import type { User } from "../types";
 
@@ -62,7 +62,6 @@ export default function LoginPage({ users, onLogin }: Props) {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("Dashboard");
-  const [showLoginForm, setShowLoginForm] = useState(false);
   const loginRef = useRef<HTMLDivElement>(null);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -72,9 +71,8 @@ export default function LoginPage({ users, onLogin }: Props) {
     else { setError("Invalid email or password"); }
   };
 
-  const quickLogin = (u: User) => { setEmail(u.email); setPassword(u.password); setError(""); setShowLoginForm(true); };
-  const scrollToLogin = () => { setShowLoginForm(true); setTimeout(() => loginRef.current?.scrollIntoView({ behavior:"smooth", block:"center" }), 50); };
-  const tryDemo = () => { if (users[0]) { quickLogin(users[0]); scrollToLogin(); } };
+  const quickLogin = (u: User) => { setEmail(u.email); setPassword(u.password); setError(""); };
+  const tryDemo = () => { if (users[0]) quickLogin(users[0]); };
 
   return (
     <div className="min-h-screen bg-[#020617] text-white">
@@ -101,41 +99,104 @@ export default function LoginPage({ users, onLogin }: Props) {
               className="hidden sm:flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer transition-all">
               WhatsApp
             </a>
-            <button onClick={scrollToLogin} className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer transition-all">
+            <button onClick={() => loginRef.current?.scrollIntoView({ behavior:"smooth", block:"center" })}
+              className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer transition-all">
               Sign In
             </button>
           </div>
         </div>
       </header>
 
-      {/* ── Hero ───────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-4 pt-16 pb-12 text-center">
-        <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 text-xs font-bold text-orange-400 mb-6 font-mono">
-          <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" /> Live · deinrim360.in/production
-        </div>
-        <h1 className="text-4xl md:text-5xl font-black leading-tight mb-4">
-          Stop Managing<br />
-          <span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">Spreadsheets.</span><br />
-          Start Managing Your<br />Production Floor.
-        </h1>
-        <p className="text-slate-400 text-sm md:text-base max-w-xl mx-auto mb-8">
-          DEINRIM MFG is a full-stack Manufacturing OMS — BOM to dispatch, MRP to GST invoice — built for Indian MSME factories.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
-          <button onClick={tryDemo} className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold px-6 py-3 rounded-xl text-sm shadow-lg shadow-orange-500/20 cursor-pointer transition-all">
-            ✨ Try Free Demo
-          </button>
-          <a href="https://wa.me/919836130393?text=I'm interested in DEINRIM MFG demo" target="_blank" rel="noreferrer"
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl px-6 py-3 text-sm font-bold cursor-pointer transition-all">
-            WhatsApp Us
-          </a>
-        </div>
+      {/* ── Hero — two column ──────────────────────────────── */}
+      <section className="max-w-6xl mx-auto px-4 pt-12 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
 
-        {/* Feature pills */}
-        <div className="flex flex-wrap justify-center gap-2 text-[10px] font-bold font-mono">
-          {["BOM Linked MRP","GST Compliant","Multi-Role Access","Delivery Challan","e-Way Bill","QC Inspection","RDSO / IS Standard","Excel Export","5 User Roles","Batch Tracking"].map(f => (
-            <span key={f} className="bg-slate-800/80 border border-slate-700 rounded-full px-3 py-1 text-slate-300">{f}</span>
-          ))}
+          {/* Left — headline */}
+          <div>
+            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 text-xs font-bold text-orange-400 mb-6 font-mono">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-400 animate-pulse" /> Live · deinrim360.in/production
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black leading-tight mb-4">
+              Stop Managing<br />
+              <span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">Spreadsheets.</span><br />
+              Start Managing Your<br />Production Floor.
+            </h1>
+            <p className="text-slate-400 text-sm md:text-base mb-8 max-w-lg">
+              DEINRIM MFG is a full-stack Manufacturing OMS — BOM to dispatch, MRP to GST invoice — built for Indian MSME factories.
+            </p>
+            {/* Feature pills */}
+            <div className="flex flex-wrap gap-2 text-[10px] font-bold font-mono">
+              {["BOM Linked MRP","GST Compliant","Multi-Role Access","Delivery Challan","e-Way Bill","QC Inspection","RDSO / IS Standard","Excel Export","5 User Roles","Batch Tracking"].map(f => (
+                <span key={f} className="bg-slate-800/80 border border-slate-700 rounded-full px-3 py-1 text-slate-300">{f}</span>
+              ))}
+            </div>
+            <div className="mt-6">
+              <a href="https://wa.me/919836130393?text=I'm interested in DEINRIM MFG demo" target="_blank" rel="noreferrer"
+                className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl px-5 py-2.5 text-sm font-bold cursor-pointer transition-all">
+                WhatsApp Us
+              </a>
+            </div>
+          </div>
+
+          {/* Right — login panel */}
+          <div ref={loginRef} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl shadow-black/40">
+            <div className="text-center mb-5">
+              <div className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 mb-3">
+                <Factory className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-base font-black text-white">Access Your Workspace</h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">Sign in or explore with demo accounts</p>
+            </div>
+
+            {/* Login form */}
+            <form onSubmit={handleLogin} className="space-y-3 mb-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                  <input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(""); }} required
+                    placeholder="Enter your email"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                  <input type={showPw ? "text" : "password"} value={password} onChange={e => { setPassword(e.target.value); setError(""); }} required
+                    placeholder="Enter your password"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-9 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors" />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white cursor-pointer">
+                    {showPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+              {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
+              <button type="submit" className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold py-2.5 rounded-lg text-sm transition-all cursor-pointer shadow-lg shadow-orange-500/20">
+                Sign In
+              </button>
+            </form>
+
+            {/* Demo users */}
+            <div className="border-t border-slate-800 pt-4">
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">Demo Users</p>
+                <button onClick={tryDemo} className="text-[10px] font-bold text-orange-400 hover:text-orange-300 cursor-pointer transition-colors">✨ Auto-fill first</button>
+              </div>
+              <div className="space-y-1.5">
+                {users.map(u => (
+                  <button key={u.id} onClick={() => quickLogin(u)}
+                    className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 transition-all cursor-pointer text-left">
+                    <div>
+                      <p className="text-xs font-bold text-white">{u.name}</p>
+                      <p className="text-[9px] text-slate-500 font-mono">{u.email}</p>
+                    </div>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded border font-mono uppercase ${ROLE_BADGE[u.role] || "bg-slate-500/20 text-slate-300 border-slate-500/30"}`}>{u.role}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -236,82 +297,6 @@ export default function LoginPage({ users, onLogin }: Props) {
             className="block w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold py-3 rounded-xl text-sm transition-all cursor-pointer text-center">
             Get Started
           </a>
-        </div>
-      </section>
-
-      {/* ── Login / Access ─────────────────────────────────── */}
-      <section ref={loginRef} className="max-w-6xl mx-auto px-4 py-12 border-t border-slate-800">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-black text-white mb-2">Access Your Workspace</h2>
-          <p className="text-slate-400 text-sm">Sign in or explore with demo accounts</p>
-        </div>
-        <div className="max-w-md mx-auto space-y-4">
-          {/* Toggle buttons */}
-          <div className="flex gap-2">
-            <button onClick={() => setShowLoginForm(true)} className={`flex-1 py-2.5 rounded-xl text-xs font-bold border cursor-pointer transition-all ${showLoginForm ? "bg-orange-600/20 border-orange-500/30 text-orange-300" : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"}`}>
-              💻 Sign In
-            </button>
-            <button onClick={tryDemo} className={`flex-1 py-2.5 rounded-xl text-xs font-bold border cursor-pointer transition-all ${!showLoginForm ? "bg-orange-600/20 border-orange-500/30 text-orange-300" : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"}`}>
-              ✨ Live Demo
-            </button>
-          </div>
-
-          {/* Login form */}
-          {showLoginForm && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-400">Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-                    <input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(""); }} required
-                      placeholder="Enter your email"
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-400">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-                    <input type={showPw ? "text" : "password"} value={password} onChange={e => { setPassword(e.target.value); setError(""); }} required
-                      placeholder="Enter your password"
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-9 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500 transition-colors" />
-                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white cursor-pointer">
-                      {showPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                    </button>
-                  </div>
-                </div>
-                {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
-                <button type="submit" className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold py-2.5 rounded-lg text-sm transition-all cursor-pointer shadow-lg shadow-orange-500/20">
-                  Sign In
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* Demo Users */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 font-mono">Demo Users — Click to auto-fill</p>
-            <div className="space-y-1.5">
-              {users.map(u => (
-                <button key={u.id} onClick={() => quickLogin(u)}
-                  className="w-full flex items-center justify-between p-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 transition-all cursor-pointer text-left">
-                  <div>
-                    <p className="text-xs font-bold text-white">{u.name}</p>
-                    <p className="text-[10px] text-slate-500 font-mono">{u.email}</p>
-                  </div>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded border font-mono uppercase ${ROLE_BADGE[u.role] || "bg-slate-500/20 text-slate-300 border-slate-500/30"}`}>{u.role}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Testimonial */}
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-4 text-center">
-            <div className="flex justify-center gap-0.5 mb-2">{[...Array(5)].map((_,i) => <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />)}</div>
-            <p className="text-[10px] text-slate-300 italic leading-relaxed">"Managing 4 machines and 200+ spring batches used to take 3 people. Now one manager handles everything — MRP, QC, dispatch — all from one screen."</p>
-            <p className="text-[9px] text-slate-500 mt-2 font-bold">— Factory Manager, Spring Manufacturer, Kolkata</p>
-          </div>
         </div>
       </section>
 
