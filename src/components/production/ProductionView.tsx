@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Factory, Plus, X, Download, Edit, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Factory, Plus, X, Download, Edit, Trash2, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import type { ProductionOrder, ProductionStatus, BOMItem, User } from "../../types";
 import { toast } from "../../utils/toast";
 
@@ -68,6 +68,7 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
 
   const openEdit = (o: ProductionOrder) => { setEditing(o); setForm({ ...o }); setShowModal(true); };
   const openNew = () => { setEditing(null); setForm(BLANK()); setShowModal(true); };
+  const del = (id: string) => { if (confirm("Delete this production order?")) { setProductionOrders(prev => prev.filter(p => p.id !== id)); toast.success("Deleted"); } };
 
   const handleExport = async () => {
     const XLSX = await import("xlsx");
@@ -151,6 +152,7 @@ export default function ProductionView({ productionOrders, setProductionOrders, 
                   {o.status === "in_progress" && <button onClick={() => updateStatus(o.id, "completed")} className="flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600/20 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold cursor-pointer hover:bg-emerald-600/30"><CheckCircle className="h-3 w-3" /> Complete</button>}
                   {["planned","in_progress"].includes(o.status) && <button onClick={() => updateStatus(o.id, "on_hold")} className="flex items-center gap-1 px-2.5 py-1 rounded bg-amber-600/20 border border-amber-500/20 text-amber-300 text-[10px] font-bold cursor-pointer hover:bg-amber-600/30"><AlertTriangle className="h-3 w-3" /> Hold</button>}
                   <button onClick={() => openEdit(o)} className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold cursor-pointer hover:bg-slate-700"><Edit className="h-3 w-3" /> Edit</button>
+                  <button onClick={() => del(o.id)} className="flex items-center gap-1 px-2.5 py-1 rounded bg-red-900/20 border border-red-800/30 text-red-400 text-[10px] font-bold cursor-pointer hover:bg-red-900/40"><Trash2 className="h-3 w-3" /> Delete</button>
                 </div>
               )}
             </div>

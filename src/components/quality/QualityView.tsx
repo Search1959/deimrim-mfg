@@ -24,6 +24,8 @@ export default function QualityView({ qcRecords, setQcRecords, productionOrders,
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ProductionOrder | null>(null);
   const canWrite = ["superadmin","manager","operator"].includes(currentUser.role);
+  const canAdmin = ["superadmin","manager"].includes(currentUser.role);
+  const delRecord = (id: string) => { if (confirm("Delete this QC record?")) { setQcRecords(prev => prev.filter(q => q.id !== id)); toast.success("Record Deleted"); } };
 
   const completedOrders = productionOrders.filter(o => o.status === "completed");
   const pendingInspection = completedOrders.filter(o => !qcRecords.find(q => q.productionOrderId === o.id));
@@ -206,6 +208,11 @@ export default function QualityView({ qcRecords, setQcRecords, productionOrders,
                   </div>
                 ))}
                 {q.checks.length > 4 && <p className="text-[9px] text-slate-600 text-center">+{q.checks.length - 4} more checks</p>}
+              </div>
+            )}
+            {canAdmin && (
+              <div className="mt-3 pt-3 border-t border-slate-800 flex gap-1.5">
+                <button onClick={() => delRecord(q.id)} className="flex items-center gap-1 px-2.5 py-1 rounded bg-red-900/20 border border-red-800/30 text-red-400 text-[10px] font-bold cursor-pointer hover:bg-red-900/40"><Trash2 className="h-3 w-3" /> Delete</button>
               </div>
             )}
           </div>

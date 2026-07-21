@@ -5,11 +5,11 @@ import type {
 
 // ── Users ────────────────────────────────────────────────────────────────────
 export const DEMO_USERS: User[] = [
-  { id: "u1", name: "Arun Jaiswal",  email: "admin@deinrim.com",    password: "Admin@123",    role: "superadmin", department: "Management",  active: true },
-  { id: "u2", name: "Rajesh Kumar",  email: "manager@deinrim.com",  password: "Manager@123",  role: "manager",    department: "Production",  active: true },
-  { id: "u3", name: "Sanjay Mehta",  email: "sales@deinrim.com",    password: "Sales@123",    role: "sales",      department: "Sales",       active: true },
-  { id: "u4", name: "Ramesh Yadav",  email: "operator@deinrim.com", password: "Operator@123", role: "operator",   department: "Shop Floor",  active: true },
-  { id: "u5", name: "Priya Sharma",  email: "readonly@deinrim.com", password: "Readonly@123", role: "readonly",   department: "Accounts",    active: true },
+  { id: "u1", name: "Arun Jaiswal",  email: "admin@deinrim.com",    password: "Admin@123",    role: "superadmin", department: "Management",  active: true, demo: true },
+  { id: "u2", name: "Rajesh Kumar",  email: "manager@deinrim.com",  password: "Manager@123",  role: "manager",    department: "Production",  active: true, demo: true },
+  { id: "u3", name: "Sanjay Mehta",  email: "sales@deinrim.com",    password: "Sales@123",    role: "sales",      department: "Sales",       active: true, demo: true },
+  { id: "u4", name: "Ramesh Yadav",  email: "operator@deinrim.com", password: "Operator@123", role: "operator",   department: "Shop Floor",  active: true, demo: true },
+  { id: "u5", name: "Priya Sharma",  email: "readonly@deinrim.com", password: "Readonly@123", role: "readonly",   department: "Accounts",    active: true, demo: true },
 ];
 
 // ── Raw Materials (generic) ───────────────────────────────────────────────────

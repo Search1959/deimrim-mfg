@@ -9,6 +9,7 @@ export interface User {
   role: UserRole;
   department?: string;
   active: boolean;
+  demo?: boolean;
 }
 
 // ── Raw Material ─────────────────────────────────────────────────────────────

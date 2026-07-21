@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Banknote, Plus, X, Download, Building2 } from "lucide-react";
+import { Banknote, Plus, X, Download, Building2, Edit, Trash2 } from "lucide-react";
 import type { Invoice, PurchaseOrder, Supplier, Customer, SalesOrder, RawMaterial, User } from "../../types";
 import { formatINR } from "../../types";
 import { toast } from "../../utils/toast";
@@ -28,7 +28,12 @@ const PO_STATUS_BADGE: Record<string, string> = {
 export default function FinanceView({ invoices, setInvoices, purchaseOrders, setPurchaseOrders, suppliers, setSuppliers, rawMaterials: _rawMaterials, setRawMaterials, customers: _customers, currentUser }: Props) {
   const [tab, setTab] = useState<Tab>("invoices");
   const [showSupModal, setShowSupModal] = useState(false);
+  const [editingSupId, setEditingSupId] = useState<string | null>(null);
   const canWrite = ["superadmin","manager"].includes(currentUser.role);
+
+  const delInvoice = (id: string) => { if (confirm("Delete this invoice?")) { setInvoices(prev => prev.filter(i => i.id !== id)); toast.success("Invoice Deleted"); } };
+  const delSupplier = (id: string) => { if (confirm("Delete this supplier?")) { setSuppliers(prev => prev.filter(s => s.id !== id)); toast.success("Supplier Deleted"); } };
+  const openEditSup = (s: Supplier) => { setEditingSupId(s.id); setSupForm({ code: s.code, name: s.name, gstin: s.gstin || "", address: s.address || "", contactPerson: s.contactPerson || "", phone: s.phone || "", creditDays: s.creditDays }); setShowSupModal(true); };
 
   const totalSales = invoices.reduce((s, i) => s + i.totalAmount, 0);
   const totalPaid = invoices.reduce((s, i) => s + i.paidAmount, 0);
@@ -43,8 +48,14 @@ export default function FinanceView({ invoices, setInvoices, purchaseOrders, set
   const saveSup = (e: React.FormEvent) => {
     e.preventDefault();
     if (!supForm.name) { toast.error("Supplier name required"); return; }
-    setSuppliers(prev => [{ id:`sup-${Date.now()}`, ...supForm }, ...prev]);
-    toast.success("Supplier Added", supForm.name); setShowSupModal(false);
+    if (editingSupId) {
+      setSuppliers(prev => prev.map(s => s.id === editingSupId ? { ...s, ...supForm } : s));
+      toast.success("Supplier Updated", supForm.name);
+    } else {
+      setSuppliers(prev => [{ id:`sup-${Date.now()}`, ...supForm }, ...prev]);
+      toast.success("Supplier Added", supForm.name);
+    }
+    setShowSupModal(false); setEditingSupId(null);
   };
 
   const markPaid = (id: string) => {
@@ -91,7 +102,7 @@ export default function FinanceView({ invoices, setInvoices, purchaseOrders, set
         </div>
         <div className="flex gap-2">
           <button onClick={exportInvoices} className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-xs font-bold cursor-pointer"><Download className="h-3.5 w-3.5" /> Export</button>
-          {canWrite && tab === "suppliers" && <button onClick={() => { setSupForm(BLANK_SUP()); setShowSupModal(true); }} className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg px-3 py-2 text-xs font-bold cursor-pointer"><Plus className="h-3.5 w-3.5" /> Add Supplier</button>}
+          {canWrite && tab === "suppliers" && <button onClick={() => { setSupForm(BLANK_SUP()); setEditingSupId(null); setShowSupModal(true); }} className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg px-3 py-2 text-xs font-bold cursor-pointer"><Plus className="h-3.5 w-3.5" /> Add Supplier</button>}
         </div>
       </div>
 
@@ -139,9 +150,10 @@ export default function FinanceView({ invoices, setInvoices, purchaseOrders, set
                   {inv.balanceAmount > 0 && <p className="text-[10px] text-amber-400 font-bold">Due: {formatINR(inv.balanceAmount)}</p>}
                 </div>
               </div>
-              {canWrite && inv.status !== "paid" && (
-                <div className="mt-3 pt-3 border-t border-slate-800">
-                  <button onClick={() => markPaid(inv.id)} className="px-3 py-1 rounded bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold cursor-pointer hover:bg-emerald-500/30">✓ Mark as Paid</button>
+              {canWrite && (
+                <div className="mt-3 pt-3 border-t border-slate-800 flex gap-1.5">
+                  {inv.status !== "paid" && <button onClick={() => markPaid(inv.id)} className="px-3 py-1 rounded bg-emerald-500/20 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold cursor-pointer hover:bg-emerald-500/30">✓ Mark as Paid</button>}
+                  <button onClick={() => delInvoice(inv.id)} className="flex items-center gap-1 px-2.5 py-1 rounded bg-red-900/20 border border-red-800/30 text-red-400 text-[10px] font-bold cursor-pointer hover:bg-red-900/40"><Trash2 className="h-3 w-3" /> Delete</button>
                 </div>
               )}
             </div>
@@ -190,9 +202,15 @@ export default function FinanceView({ invoices, setInvoices, purchaseOrders, set
                   <p className="text-[10px] text-slate-500">{s.address}</p>
                   {s.gstin && <p className="text-[10px] font-mono text-slate-500 mt-0.5">GSTIN: {s.gstin}</p>}
                 </div>
-                <div className="text-right text-xs text-slate-400">
+                <div className="text-right text-xs text-slate-400 space-y-1">
                   <p className="font-mono">{s.code}</p>
                   <p>{s.creditDays} days credit</p>
+                  {canWrite && (
+                    <div className="flex gap-1.5 justify-end mt-1">
+                      <button onClick={() => openEditSup(s)} className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold cursor-pointer hover:bg-slate-700"><Edit className="h-3 w-3" /> Edit</button>
+                      <button onClick={() => delSupplier(s.id)} className="flex items-center gap-1 px-2.5 py-1 rounded bg-red-900/20 border border-red-800/30 text-red-400 text-[10px] font-bold cursor-pointer hover:bg-red-900/40"><Trash2 className="h-3 w-3" /> Delete</button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -205,7 +223,7 @@ export default function FinanceView({ invoices, setInvoices, purchaseOrders, set
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between p-5 border-b border-slate-800">
-              <h3 className="font-bold text-white text-sm">Add Supplier</h3>
+              <h3 className="font-bold text-white text-sm">{editingSupId ? "Edit" : "Add"} Supplier</h3>
               <button onClick={() => setShowSupModal(false)} className="text-slate-400 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={saveSup} className="p-5 space-y-3">

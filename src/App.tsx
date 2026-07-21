@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard, Package, BookOpen, Factory, ShieldCheck,
   Warehouse, ShoppingCart, Banknote, Settings, LogOut, Menu, X, ChevronRight,
@@ -50,18 +50,46 @@ export default function App() {
   const [activeModule, setActiveModule] = useState<Module>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(MOCK_RAW_MATERIALS);
-  const [boms, setBoms] = useState<BOMItem[]>(MOCK_BOM);
-  const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>(MOCK_PRODUCTION_ORDERS);
-  const [qcRecords, setQcRecords] = useState<QCRecord[]>(MOCK_QC);
-  const [finishedGoods, setFinishedGoods] = useState<FinishedGood[]>(MOCK_FINISHED_GOODS);
-  const [customers, setCustomers] = useState<Customer[]>(MOCK_CUSTOMERS);
-  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>(MOCK_SALES_ORDERS);
-  const [dispatches, setDispatches] = useState<Dispatch[]>(MOCK_DISPATCHES);
-  const [suppliers, setSuppliers] = useState<Supplier[]>(MOCK_SUPPLIERS);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(MOCK_PO);
-  const [invoices, setInvoices] = useState<Invoice[]>(MOCK_INVOICES);
+  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
+  const [boms, setBoms] = useState<BOMItem[]>([]);
+  const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>([]);
+  const [qcRecords, setQcRecords] = useState<QCRecord[]>([]);
+  const [finishedGoods, setFinishedGoods] = useState<FinishedGood[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
+  const [dispatches, setDispatches] = useState<Dispatch[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [users, setUsers] = useState<User[]>(DEMO_USERS);
+
+  useEffect(() => {
+    if (currentUser?.demo) {
+      setRawMaterials(MOCK_RAW_MATERIALS);
+      setBoms(MOCK_BOM);
+      setProductionOrders(MOCK_PRODUCTION_ORDERS);
+      setQcRecords(MOCK_QC);
+      setFinishedGoods(MOCK_FINISHED_GOODS);
+      setCustomers(MOCK_CUSTOMERS);
+      setSalesOrders(MOCK_SALES_ORDERS);
+      setDispatches(MOCK_DISPATCHES);
+      setSuppliers(MOCK_SUPPLIERS);
+      setPurchaseOrders(MOCK_PO);
+      setInvoices(MOCK_INVOICES);
+    } else {
+      setRawMaterials([]);
+      setBoms([]);
+      setProductionOrders([]);
+      setQcRecords([]);
+      setFinishedGoods([]);
+      setCustomers([]);
+      setSalesOrders([]);
+      setDispatches([]);
+      setSuppliers([]);
+      setPurchaseOrders([]);
+      setInvoices([]);
+    }
+  }, [currentUser]);
 
   if (!currentUser) return <LoginPage users={users} onLogin={setCurrentUser} />;
 

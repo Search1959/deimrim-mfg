@@ -71,8 +71,7 @@ export default function LoginPage({ users, onLogin }: Props) {
     else { setError("Invalid email or password"); }
   };
 
-  const quickLogin = (u: User) => { setEmail(u.email); setPassword(u.password); setError(""); };
-  const tryDemo = () => { if (users[0]) quickLogin(users[0]); };
+  const tryDemo = () => { if (users[0]) onLogin(users[0]); };
 
   return (
     <div className="min-h-screen bg-[#020617] text-white">
@@ -185,7 +184,7 @@ export default function LoginPage({ users, onLogin }: Props) {
               </div>
               <div className="space-y-1.5">
                 {users.map(u => (
-                  <button key={u.id} onClick={() => quickLogin(u)}
+                  <button key={u.id} onClick={() => onLogin(u)}
                     className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600 transition-all cursor-pointer text-left">
                     <div>
                       <p className="text-xs font-bold text-white">{u.name}</p>

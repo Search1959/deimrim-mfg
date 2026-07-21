@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Warehouse, Download, Edit, X } from "lucide-react";
+import { Warehouse, Download, Edit, X, Trash2 } from "lucide-react";
 import type { FinishedGood, BOMItem, User } from "../../types";
 import { toast } from "../../utils/toast";
 
@@ -106,7 +106,10 @@ export default function FinishedGoodsView({ finishedGoods, setFinishedGoods, cur
                 <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{fg.receivedDate}</td>
                 <td className="px-4 py-3">
                   {canWrite && editingId !== fg.id && (
-                    <button onClick={() => { setEditingId(fg.id); setEditLocation(fg.location); }} className="p-1 text-slate-500 hover:text-blue-400 cursor-pointer"><Edit className="h-3.5 w-3.5" /></button>
+                    <div className="flex gap-1">
+                      <button onClick={() => { setEditingId(fg.id); setEditLocation(fg.location); }} className="p-1 text-slate-500 hover:text-blue-400 cursor-pointer" title="Edit Location"><Edit className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => { if (confirm("Remove this batch from finished goods?")) { setFinishedGoods(prev => prev.filter(f => f.id !== fg.id)); toast.success("Removed"); } }} className="p-1 text-slate-500 hover:text-red-400 cursor-pointer" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
                   )}
                 </td>
               </tr>
